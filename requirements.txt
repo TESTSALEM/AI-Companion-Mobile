@@ -1,0 +1,6 @@
+streamlit
+groq
+PyPDF2
+gTTS
+Pillow
+streamlit-mic-recorder
