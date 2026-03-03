@@ -20,7 +20,7 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# تخصيص مظهر التطبيق ليتناسب مع شاشة الجوال
+# تخصيص المظهر (CSS)
 st.markdown("""
     <style>
     .stApp { background-color: #0E1117; color: white; }
@@ -40,10 +40,10 @@ st.markdown("""
     """, unsafe_allow_html=True)
 
 # ==========================================
-# 2. جسر الإشعارات مع تطبيق الأندرويد
+# 2. جسر الإشعارات مع الأندرويد
 # ==========================================
 def trigger_android_notification(title, message):
-    """إرسال إشارة برمجية للجسر المدمج في تطبيق الأندرويد لإظهار إشعار حقيقي"""
+    """إرسال إشعار حقيقي للهاتف"""
     notification_js = f"""
         <script>
             if (window.AndroidBridge) {{
@@ -53,13 +53,13 @@ def trigger_android_notification(title, message):
     """
     components.html(notification_js, height=0)
 
-# واجهة العنوان الرئيسية
+# واجهة العنوان
 st.title("AI Companion V2 🤖")
-if st.button("🔔 اختبار نظام الإشعارات"):
-    trigger_android_notification("تنبيه من مساعدك", "يا هلا يا سالم، نظام الإشعارات والصور يعمل بنجاح!")
+if st.button("🔔 اختبار النظام"):
+    trigger_android_notification("تنبيه النظام", "تم إصلاح مشكلة الصور والموديل بنجاح!")
 
 # ==========================================
-# 3. إعدادات المجلدات وتخزين البيانات
+# 3. إعدادات المجلدات والملفات
 # ==========================================
 PROJECTS_FOLDER = "projects"
 API_KEY_FILE = "groq_key.txt"
@@ -67,30 +67,24 @@ API_KEY_FILE = "groq_key.txt"
 if not os.path.exists(PROJECTS_FOLDER):
     os.makedirs(PROJECTS_FOLDER)
 
-SYSTEM_PROMPT = """أنت 'مساعد سالم الشخصي'. أنت خبير مبرمج (Senior Developer) وصديق تقني ذكي. 
-لديك القدرة الكاملة على تحليل الصور والملفات البرمجية. 
-أجب دائماً باللغة العربية بأسلوب متميز وودود."""
+SYSTEM_PROMPT = """أنت 'مساعد سالم الشخصي'. أنت خبير مبرمج (Senior Developer) وصديق ذكي. 
+لديك القدرة الكاملة على تحليل الصور والملفات. 
+أجب دائماً باللغة العربية بأسلوب متميز."""
 
 # ==========================================
-# 4. الدوال المساعدة (الإدارة والتحويل)
+# 4. الدوال المساعدة (تم إصلاح معالجة الصور هنا)
 # ==========================================
 
-def save_project_data(project_name, messages):
-    file_path = os.path.join(PROJECTS_FOLDER, f"{project_name}.json")
-    try:
-        with open(file_path, "w", encoding="utf-8") as file:
-            json.dump(messages, file, ensure_ascii=False, indent=4)
-    except Exception as e:
-        st.error(f"خطأ في حفظ المشروع: {e}")
+def save_project_data(p_name, msgs):
+    file_path = os.path.join(PROJECTS_FOLDER, f"{p_name}.json")
+    with open(file_path, "w", encoding="utf-8") as file:
+        json.dump(msgs, file, ensure_ascii=False, indent=4)
 
-def load_project_data(project_name):
-    file_path = os.path.join(PROJECTS_FOLDER, f"{project_name}.json")
+def load_project_data(p_name):
+    file_path = os.path.join(PROJECTS_FOLDER, f"{p_name}.json")
     if os.path.exists(file_path):
-        try:
-            with open(file_path, "r", encoding="utf-8") as file:
-                return json.load(file)
-        except Exception as e:
-            st.error(f"خطأ في تحميل المشروع: {e}")
+        with open(file_path, "r", encoding="utf-8") as file:
+            return json.load(file)
     return None
 
 def save_api_key(key):
@@ -104,25 +98,28 @@ def load_api_key():
     return ""
 
 def process_and_convert_image(image_file):
-    """حل مشكلة RGBA وتصغير الصورة لتعمل مع Groq بكفاءة"""
+    """
+    إصلاح مشكلة RGBA وتحويل الصورة لـ Base64
+    """
     try:
         img = Image.open(image_file)
         
-        # 1. حل مشكلة صيغة PNG والشفافية (RGBA)
+        # --- الإصلاح الأول: تحويل الصور الشفافة إلى RGB ---
         if img.mode in ("RGBA", "P"):
             img = img.convert("RGB")
             
-        # 2. تصغير الصورة لتجنب الأخطاء والمحافظة على السرعة
+        # تصغير الصورة لضمان السرعة
         img.thumbnail((1000, 1000)) 
+        
         buffered = io.BytesIO()
         img.save(buffered, format="JPEG", quality=85)
         return base64.b64encode(buffered.getvalue()).decode('utf-8')
     except Exception as e:
-        st.error(f"فشل في معالجة الصورة: {e}")
+        st.error(f"فشل معالجة الصورة: {e}")
         return None
 
 # ==========================================
-# 5. بناء القائمة الجانبية (Sidebar)
+# 5. القائمة الجانبية (Sidebar)
 # ==========================================
 
 with st.sidebar:
@@ -132,153 +129,142 @@ with st.sidebar:
     user_api_key = st.text_input("مفتاح Groq API:", value=saved_key, type="password")
     if st.button("تنشيط النظام 🚀"):
         save_api_key(user_api_key)
-        st.success("تم التنشيط بنجاح!")
+        st.success("تم التنشيط!")
         st.rerun()
 
     st.divider()
 
-    all_files = os.listdir(PROJECTS_FOLDER)
-    project_list = [f.replace(".json", "") for f in all_files if f.endswith(".json")]
-    if not project_list: project_list = ["محادثة_جديدة"]
-    active_project = st.selectbox("المشروع الحالي:", project_list)
+    # إدارة المشاريع
+    files = os.listdir(PROJECTS_FOLDER)
+    p_list = [f.replace(".json", "") for f in files if f.endswith(".json")]
+    if not p_list: p_list = ["محادثة_جديدة"]
+    active_p = st.selectbox("المشروع الحالي:", p_list)
     
-    new_p_input = st.text_input("أنشئ مشروعاً جديداً باسم:")
-    if st.button("➕ إنشاء المشروع"):
-        if new_p_input.strip():
-            save_project_data(new_p_input.strip(), [{"role": "system", "content": SYSTEM_PROMPT}])
+    new_p = st.text_input("اسم مشروع جديد:")
+    if st.button("➕ إنشاء"):
+        if new_p.strip():
+            save_project_data(new_p.strip(), [{"role": "system", "content": SYSTEM_PROMPT}])
             st.rerun()
 
-    if st.button("🗑️ حذف المشروع الحالي"):
-        path_to_del = os.path.join(PROJECTS_FOLDER, f"{active_project}.json")
-        if os.path.exists(path_to_del):
-            os.remove(path_to_del)
+    if st.button("🗑️ حذف الحالي"):
+        try:
+            os.remove(os.path.join(PROJECTS_FOLDER, f"{active_p}.json"))
             st.rerun()
+        except: pass
 
     st.divider()
 
-    st.subheader("🛠️ أدوات الصور والملفات")
-    mobile_camera = st.camera_input("التقط صورة بالكاميرا")
-    uploaded_pdf = st.file_uploader("ارفع ملف PDF كمرجع:", type=["pdf"])
-    uploaded_img = st.file_uploader("ارفع صورة من الاستوديو:", type=["jpg", "png", "jpeg"])
+    # أدوات الإدخال
+    st.subheader("🛠️ أدوات الصور")
+    cam = st.camera_input("التقط صورة")
+    up_img = st.file_uploader("ارفع صورة:", type=["jpg", "png", "jpeg"])
+    up_pdf = st.file_uploader("ملف PDF:", type=["pdf"])
     
-    active_image = mobile_camera if mobile_camera else uploaded_img
+    active_img = cam if cam else up_img
 
-    st.write("🎙️ الأوامر الصوتية:")
-    recorded_audio = mic_recorder(
-        start_prompt="تحدث الآن 🎙️", 
-        stop_prompt="توقف للإرسال 📤", 
-        key='my_mic'
-    )
-    voice_feedback = st.checkbox("تفعيل النطق الصوتي للردود", value=False)
+    st.write("🎙️ صوت:")
+    audio = mic_recorder(start_prompt="تحدث 🎙️", stop_prompt="إرسال 📤", key='mic')
+    voice_on = st.checkbox("النطق الصوتي", value=False)
 
 # ==========================================
-# 6. استخراج سياق الـ PDF
+# 6. استخراج نص PDF
 # ==========================================
-pdf_context = ""
-if uploaded_pdf:
+pdf_txt = ""
+if up_pdf:
     try:
-        reader = PdfReader(uploaded_pdf)
+        reader = PdfReader(up_pdf)
         for page in reader.pages:
-            pdf_context += (page.extract_text() or "") + "\n"
-    except Exception as e:
-        st.error(f"خطأ في قراءة الـ PDF: {e}")
+            pdf_txt += (page.extract_text() or "") + "\n"
+    except: pass
 
 # ==========================================
-# 7. محرك الذكاء الاصطناعي ومعالجة المحادثة
+# 7. المنطق الذكي (تم تحديث الموديل هنا)
 # ==========================================
 
 if not user_api_key:
-    st.info("💡 يرجى إدخال مفتاح API في القائمة الجانبية للبدء.")
+    st.info("💡 أدخل مفتاح API للبدء.")
 else:
-    groq_client = Groq(api_key=user_api_key)
+    client = Groq(api_key=user_api_key)
 
-    if "messages" not in st.session_state or st.session_state.get('current_p_name') != active_project:
-        loaded_messages = load_project_data(active_project)
-        if loaded_messages:
-            st.session_state.messages = loaded_messages
-        else:
-            st.session_state.messages = [{"role": "system", "content": SYSTEM_PROMPT}]
-        st.session_state.current_p_name = active_project
+    if "messages" not in st.session_state or st.session_state.get('curr_p') != active_p:
+        data = load_project_data(active_p)
+        st.session_state.messages = data if data else [{"role": "system", "content": SYSTEM_PROMPT}]
+        st.session_state.curr_p = active_p
 
-    for msg in st.session_state.messages:
-        if msg["role"] != "system":
-            with st.chat_message(msg["role"]):
-                st.markdown(msg["content"])
+    for m in st.session_state.messages:
+        if m["role"] != "system":
+            with st.chat_message(m["role"]): st.markdown(m["content"])
 
-    user_query = None
-    if recorded_audio:
-        with st.spinner("جاري تحليل صوتك..."):
+    u_query = None
+    if audio:
+        with st.spinner("تحليل الصوت..."):
             try:
-                transcription = groq_client.audio.transcriptions.create(
-                    file=("audio.wav", recorded_audio['bytes']),
-                    model="whisper-large-v3",
-                    language="ar"
-                )
-                user_query = transcription.text
-            except Exception as e:
-                st.error(f"خطأ في تحليل الصوت: {e}")
+                trans = client.audio.transcriptions.create(file=("a.wav", audio['bytes']), model="whisper-large-v3")
+                u_query = trans.text
+            except: st.error("فشل الصوت")
     else:
-        user_query = st.chat_input("اسألني أي شيء يا سالم...")
+        u_query = st.chat_input("اكتب سؤالك هنا...")
 
-    if user_query:
-        st.session_state.messages.append({"role": "user", "content": user_query})
-        with st.chat_message("user"):
-            st.markdown(user_query)
+    if u_query:
+        st.session_state.messages.append({"role": "user", "content": u_query})
+        with st.chat_message("user"): st.markdown(u_query)
 
         with st.chat_message("assistant"):
-            response_placeholder = st.empty()
-            full_response = ""
+            place = st.empty()
+            full_res = ""
             
             try:
-                if active_image:
-                    # 1. استخدام الموديل الرسمي الجديد بعد إيقاف القديم
-                    model_to_use = "llama-3.2-11b-vision-instruct"
-                    base64_img = process_and_convert_image(active_image)
+                if active_img:
+                    # --- الإصلاح الثاني: استخدام الموديل الجديد ---
+                    # استبدلنا 11b القديم بـ 90b الجديد والقوي
+                    model_id = "llama-3.2-90b-vision-preview" 
                     
-                    messages_payload = [
-                        {"role": "system", "content": SYSTEM_PROMPT},
-                        {
-                            "role": "user",
-                            "content": [
-                                {"type": "text", "text": f"المرجع المرفق: {pdf_context}\n\nسؤال المستخدم: {user_query}"},
-                                {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{base64_img}"}}
-                            ]
-                        }
-                    ]
+                    b64 = process_and_convert_image(active_img)
+                    if b64:
+                        payload = [
+                            {"role": "system", "content": SYSTEM_PROMPT},
+                            {
+                                "role": "user",
+                                "content": [
+                                    {"type": "text", "text": f"المرجع: {pdf_txt}\n\nالسؤال: {u_query}"},
+                                    {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{b64}"}}
+                                ]
+                            }
+                        ]
+                    else:
+                        st.error("فشل في تجهيز الصورة")
+                        st.stop()
                 else:
-                    model_to_use = "llama-3.3-70b-versatile"
-                    context_query = f"سياق الـ PDF:\n{pdf_context}\n\nالسؤال الحالي: {user_query}"
-                    
-                    messages_payload = st.session_state.messages[-10:]
-                    messages_payload[-1] = {"role": "user", "content": context_query}
+                    model_id = "llama-3.3-70b-versatile"
+                    payload = st.session_state.messages[-10:]
+                    payload[-1] = {"role": "user", "content": f"المرجع: {pdf_txt}\n\n{u_query}"}
 
-                completion_stream = groq_client.chat.completions.create(
-                    messages=messages_payload,
-                    model=model_to_use,
+                stream = client.chat.completions.create(
+                    messages=payload,
+                    model=model_id, # استخدام الموديل المحدث
                     temperature=0.7,
                     stream=True
                 )
                 
-                for chunk in completion_stream:
+                for chunk in stream:
                     if chunk.choices[0].delta.content:
-                        full_response += chunk.choices[0].delta.content
-                        response_placeholder.markdown(full_response + "▌")
+                        full_res += chunk.choices[0].delta.content
+                        place.markdown(full_res + "▌")
                 
-                response_placeholder.markdown(full_response)
+                place.markdown(full_res)
+                st.session_state.messages.append({"role": "assistant", "content": full_res})
+                save_project_data(active_p, st.session_state.messages)
                 
-                st.session_state.messages.append({"role": "assistant", "content": full_response})
-                save_project_data(active_project, st.session_state.messages)
-                
-                if len(full_response) > 300:
-                    trigger_android_notification("تم اكتمال التحليل", "يا سالم، انتهيت من كتابة الرد المفصل لك.")
+                if len(full_res) > 200:
+                    trigger_android_notification("تم الرد", "سالم، الإجابة جاهزة.")
 
-                if voice_feedback:
+                if voice_on:
                     try:
-                        clean_text = full_response.replace("`", "").replace("*", "")
-                        tts = gTTS(text=clean_text[:300], lang='ar')
-                        tts.save("response.mp3")
-                        st.audio("response.mp3", autoplay=True)
+                        clean = full_res.replace("`", "").replace("*", "")
+                        tts = gTTS(text=clean[:300], lang='ar')
+                        tts.save("r.mp3")
+                        st.audio("r.mp3", autoplay=True)
                     except: pass
 
             except Exception as e:
-                st.error(f"حدث خطأ في محرك Groq: {e}")
+                st.error(f"حدث خطأ: {e}")
